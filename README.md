@@ -92,26 +92,25 @@ Render ile deploy akisi:
 2. Render'da `New` > `Blueprint` veya `New` > `Web Service` secin.
 3. GitHub reposunu baglayin.
 4. Repodaki `render.yaml` dosyasini kullanin veya asagidaki ayarlari manuel girin.
-5. Ilk deploy tamamlandiktan sonra Render Shell/Jobs uzerinden bir kez `npm run deploy:seed` calistirin.
-6. Render'in verdigi `https://...onrender.com` linkini paylasin.
+5. Render'in verdigi `https://...onrender.com` linkini paylasin.
 
-Not: `npm run deploy:seed` demo veriyi yeniden olusturur ve mevcut demo veritabanini sifirlar. Sadece ilk kurulumda veya demo datayi resetlemek istediginizde calistirin.
+Not: Bu repo varsayilan olarak Render'in ucretsiz demo moduna gore ayarlandi. SQLite veritabani gecici dosya olarak kullanilir; Render restart veya redeploy sonrasi demo veri yeniden olusturulabilir ve onceki degisiklikler kalici olmayabilir. Kalici veri icin Render persistent disk veya PostgreSQL kullanin.
 
 Onerilen ayarlar:
 
-- Build command: `npm install && npm run build && npm run deploy:prepare`
+- Build command: `npm install && npm run build && npm run deploy:prepare && npm run deploy:seed`
 - Start command: `npm run start`
 - Health check path: `/api/health`
 
 Environment variables:
 
-- `DATABASE_URL`: Render persistent disk icin `file:/var/data/harun-karaca.db`.
+- `DATABASE_URL`: Ucretsiz demo icin `file:./dev.db`.
 - `JWT_SECRET`: production icin guclu ve gizli bir deger.
 - `PORT`: host otomatik veriyorsa set etmeyin; uygulama env degerini okur.
 - `CORS_ORIGIN`: tek domain deploy'da bos birakilabilir. Ayrik frontend domaini varsa o origin'i girin.
 - `VITE_API_URL`: tek domain deploy'da bos birakilabilir. Production build `/api` kullanir.
 
-Seed gerekiyorsa deploy sonrasi bir kez calistirin:
+Demo veriyi manuel sifirlamak gerekirse calistirin:
 
 ```bash
 npm run deploy:seed
