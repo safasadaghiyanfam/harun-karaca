@@ -1,0 +1,377 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  CASHIER
+  INVENTORY
+  ACCOUNTING
+  TECHNICIAN
+}
+
+enum EntityStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum PumpStatus {
+  IDLE
+  DISPENSING
+  OFFLINE
+  MAINTENANCE
+}
+
+enum ShiftStatus {
+  OPEN
+  CLOSED
+}
+
+enum SaleStatus {
+  COMPLETED
+  VOIDED
+  FAILED
+}
+
+enum PaymentType {
+  CASH
+  CARD
+  FLEET
+}
+
+enum MovementType {
+  DELIVERY
+  SALE
+  ADJUSTMENT
+}
+
+enum IntegrationType {
+  PUMP
+  PAYMENT
+  ERP
+  E_TRANSFORMATION
+  INVENTORY
+  E_INVOICE
+  E_ARCHIVE
+  E_LEDGER
+  EPDK
+  OKC
+  BANK
+  ACCOUNTING
+  TAX_DECLARATION
+}
+
+enum IntegrationStatus {
+  SUCCESS
+  FAILURE
+  DRY_RUN
+}
+
+enum FiscalDocumentType {
+  E_INVOICE
+  E_ARCHIVE
+}
+
+enum FiscalOperationStatus {
+  DRAFT
+  READY
+  DRY_RUN
+  SUBMITTED
+  SUCCESS
+  FAILURE
+}
+
+enum TaxDeclarationType {
+  VAT
+  WITHHOLDING
+  TEMPORARY
+}
+
+enum BankTransactionStatus {
+  UNMATCHED
+  MATCHED
+}
+
+enum ReconciliationStatus {
+  MATCHED
+  UNMATCHED
+  REVIEW
+}
+
+enum JournalEntryStatus {
+  DRAFT
+  POSTED
+}
+
+model User {
+  id           String     @id @default(cuid())
+  name         String
+  email        String     @unique
+  passwordHash String
+  role         Role
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  shifts       Shift[]
+  auditLogs    AuditLog[]
+}
+
+model Station {
+  id        String       @id @default(cuid())
+  name      String
+  code      String       @unique
+  address   String
+  status    EntityStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  tanks     Tank[]
+  pumps     Pump[]
+  shifts    Shift[]
+  sales     Sale[]
+  epdkReports EpdkReport[]
+}
+
+model FuelType {
+  id        String       @id @default(cuid())
+  name      String
+  code      String       @unique
+  unit      String       @default("L")
+  unitPrice Decimal
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  tanks     Tank[]
+  pumps     Pump[]
+  sales     Sale[]
+}
+
+model Tank {
+  id              String              @id @default(cuid())
+  stationId       String
+  fuelTypeId      String
+  name            String
+  capacity        Decimal
+  currentLevel    Decimal
+  criticalLevel   Decimal
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  station         Station             @relation(fields: [stationId], references: [id])
+  fuelType        FuelType            @relation(fields: [fuelTypeId], references: [id])
+  movements       InventoryMovement[]
+}
+
+model Pump {
+  id         String     @id @default(cuid())
+  stationId  String
+  fuelTypeId String
+  number     Int
+  status     PumpStatus @default(IDLE)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  station    Station    @relation(fields: [stationId], references: [id])
+  fuelType   FuelType   @relation(fields: [fuelTypeId], references: [id])
+  sales      Sale[]
+
+  @@unique([stationId, number])
+}
+
+model Shift {
+  id          String      @id @default(cuid())
+  stationId   String
+  userId      String
+  openedAt    DateTime    @default(now())
+  closedAt    DateTime?
+  openingCash Decimal
+  closingCash Decimal?
+  status      ShiftStatus @default(OPEN)
+  station     Station     @relation(fields: [stationId], references: [id])
+  user        User        @relation(fields: [userId], references: [id])
+  sales       Sale[]
+}
+
+model Sale {
+  id          String      @id @default(cuid())
+  stationId   String
+  pumpId      String
+  shiftId     String
+  fuelTypeId  String
+  liters      Decimal
+  unitPrice   Decimal
+  total       Decimal
+  paymentType PaymentType
+  status      SaleStatus  @default(COMPLETED)
+  createdAt   DateTime    @default(now())
+  station     Station     @relation(fields: [stationId], references: [id])
+  pump        Pump        @relation(fields: [pumpId], references: [id])
+  shift       Shift       @relation(fields: [shiftId], references: [id])
+  fuelType    FuelType    @relation(fields: [fuelTypeId], references: [id])
+  fiscalDocuments FiscalDocument[]
+  okcReceipts      OkcReceipt[]
+  bankTransactions BankTransaction[]
+  reconciliations  BankReconciliation[]
+}
+
+model InventoryMovement {
+  id        String       @id @default(cuid())
+  tankId    String
+  type      MovementType
+  quantity  Decimal
+  source    String
+  reference String?
+  createdAt DateTime     @default(now())
+  tank      Tank         @relation(fields: [tankId], references: [id])
+}
+
+model IntegrationLog {
+  id              String            @id @default(cuid())
+  type            IntegrationType
+  status          IntegrationStatus
+  requestSummary  String
+  responseSummary String?
+  errorMessage    String?
+  createdAt       DateTime          @default(now())
+}
+
+model FiscalDocument {
+  id             String                @id @default(cuid())
+  type           FiscalDocumentType
+  status         FiscalOperationStatus @default(DRAFT)
+  saleId         String?
+  customerName   String
+  taxNumber      String?
+  documentNumber String?
+  payloadJson    String?
+  responseJson   String?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  sale           Sale?                 @relation(fields: [saleId], references: [id])
+}
+
+model EledgerRun {
+  id          String                @id @default(cuid())
+  period      String
+  status      FiscalOperationStatus @default(DRAFT)
+  mockFileRef String?
+  payloadJson String?
+  responseJson String?
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+}
+
+model EpdkReport {
+  id                   String                @id @default(cuid())
+  stationId            String
+  period               String
+  status               FiscalOperationStatus @default(DRAFT)
+  salesSummaryJson     String?
+  inventorySummaryJson String?
+  payloadJson          String?
+  responseJson         String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  station              Station               @relation(fields: [stationId], references: [id])
+}
+
+model OkcReceipt {
+  id           String                @id @default(cuid())
+  saleId       String
+  deviceNo     String
+  receiptNo    String?
+  status       FiscalOperationStatus @default(DRAFT)
+  payloadJson  String?
+  responseJson String?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  sale         Sale                  @relation(fields: [saleId], references: [id])
+}
+
+model BankTransaction {
+  id              String                @id @default(cuid())
+  bankName        String
+  transactionDate DateTime
+  amount          Decimal
+  description     String
+  status          BankTransactionStatus @default(UNMATCHED)
+  saleId          String?
+  payloadJson     String?
+  responseJson    String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  sale            Sale?                 @relation(fields: [saleId], references: [id])
+  reconciliations BankReconciliation[]
+}
+
+model BankReconciliation {
+  id                String               @id @default(cuid())
+  bankTransactionId String
+  saleId            String?
+  status            ReconciliationStatus @default(UNMATCHED)
+  differenceAmount  Decimal              @default(0)
+  notes             String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  bankTransaction   BankTransaction      @relation(fields: [bankTransactionId], references: [id])
+  sale              Sale?                @relation(fields: [saleId], references: [id])
+}
+
+model LedgerAccount {
+  id        String             @id @default(cuid())
+  code      String             @unique
+  name      String
+  type      String
+  isActive  Boolean            @default(true)
+  createdAt DateTime           @default(now())
+  lines     JournalEntryLine[]
+}
+
+model JournalEntry {
+  id           String             @id @default(cuid())
+  period       String
+  description  String
+  status       JournalEntryStatus @default(DRAFT)
+  source       String
+  payloadJson  String?
+  responseJson String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  lines        JournalEntryLine[]
+}
+
+model JournalEntryLine {
+  id             String       @id @default(cuid())
+  journalEntryId String
+  accountId      String
+  debit          Decimal      @default(0)
+  credit         Decimal      @default(0)
+  description    String?
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id])
+  account        LedgerAccount @relation(fields: [accountId], references: [id])
+}
+
+model TaxDeclaration {
+  id           String                @id @default(cuid())
+  type         TaxDeclarationType
+  period       String
+  status       FiscalOperationStatus @default(DRAFT)
+  payloadJson  String?
+  responseJson String?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  entityType String
+  entityId   String?
+  metadata   String?
+  createdAt  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [id])
+}

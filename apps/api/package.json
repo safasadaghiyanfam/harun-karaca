@@ -1,0 +1,42 @@
+{
+  "name": "@hk-demo/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "db:generate": "RUST_LOG=info ./node_modules/.bin/prisma generate",
+    "db:migrate": "RUST_LOG=info ./node_modules/.bin/prisma db push",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "./node_modules/.bin/prisma studio",
+    "test": "RUST_LOG=info DATABASE_URL=file:./test.db ./node_modules/.bin/prisma db push --force-reset && DATABASE_URL=file:./test.db vitest run"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.10.1",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "zod": "^3.25.64"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/morgan": "^1.9.9",
+    "@types/node": "^24.0.3",
+    "@types/supertest": "^6.0.3",
+    "prisma": "^6.10.1",
+    "supertest": "^7.1.1",
+    "tsx": "^4.20.3",
+    "vitest": "^3.2.4"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  }
+}

@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: harun-karaca
+    runtime: node
+    plan: starter
+    buildCommand: npm install && npm run build && npm run deploy:prepare
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    disk:
+      name: harun-karaca-sqlite
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: file:/var/data/harun-karaca.db
+      - key: JWT_SECRET
+        generateValue: true
