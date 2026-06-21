@@ -3,7 +3,7 @@ services:
     name: harun-karaca
     runtime: node
     plan: free
-    buildCommand: npm install && npm run build && npm run deploy:prepare && npm run deploy:seed
+    buildCommand: npm install --include=dev && npm run build && npm run deploy:prepare && npm run deploy:seed
     startCommand: npm run start
     healthCheckPath: /api/health
     envVars:
@@ -11,6 +11,8 @@ services:
         value: 20
       - key: NODE_ENV
         value: production
+      - key: NPM_CONFIG_PRODUCTION
+        value: "false"
       - key: DATABASE_URL
         value: file:./dev.db
       - key: JWT_SECRET
