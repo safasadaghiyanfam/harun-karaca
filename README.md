@@ -4,6 +4,8 @@ Canli demo: https://harun-karaca.onrender.com
 
 Demo giris: `admin@demo.local / Admin123!`
 
+Proje anlatimi: [docs/project-overview.md](docs/project-overview.md)
+
 Harun Karaca, Promaks/Master ERP tanitim ekranlarindan turetilmis, benzin istasyonlari icin moduler ve dogrulanabilir bir full-stack MVP'dir.
 
 ## Kapsam
